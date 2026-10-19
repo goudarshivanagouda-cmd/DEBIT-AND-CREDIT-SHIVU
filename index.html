@@ -1,0 +1,833 @@
+
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debit & Credit — Main Dashboard</title>
+
+<!-- Excel XLSX Library -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --ink:#172554;
+  --muted:#64748b;
+  --line:#c7d2fe;
+  --purple:#4338ca;
+  --blue:#2563eb;
+  --teal:#0f766e;
+  --green:#15803d;
+  --red:#b91c1c;
+}
+*{box-sizing:border-box}
+html,body{
+  width:100%;height:100%;margin:0;
+  overflow:hidden!important;
+}
+body{
+  display:flex;flex-direction:column;
+  overscroll-behavior:none;
+  font-family:"Noto Sans Kannada",Arial,sans-serif;
+  background:linear-gradient(135deg,#e0e7ff,#f0f9ff,#f3e8ff);
+  color:var(--ink);font-size:13px;
+}
+header{
+  flex:0 0 auto;min-height:66px;
+  background:linear-gradient(110deg,#172554,#4338ca,#087f8c);
+  color:#fff;display:flex;align-items:center;
+  padding:10px 18px;gap:14px;
+  border-bottom:3px solid #a5b4fc;
+  box-shadow:0 4px 14px #1e1b4b30;
+}
+.brand{font-size:21px;font-weight:800;white-space:nowrap}
+.subtitle{color:#e0f2fe;font-size:12px}
+.topcontrols{
+  margin-left:auto;display:flex;align-items:center;
+  gap:8px;flex-wrap:wrap;
+}
+select,input{
+  font:inherit;border:2px solid #c7d2fe;
+  border-radius:8px;padding:8px;background:#fff;
+  color:#172554;min-width:0;max-width:100%;
+  transition:.2s;
+}
+select:focus,input:focus{
+  outline:2px solid #bfdbfe;border-color:#4f46e5;
+}
+button{
+  font:inherit;font-weight:700;border:1px solid #4338ca;
+  border-radius:8px;padding:9px 12px;cursor:pointer;
+  color:#fff;background:linear-gradient(135deg,#4338ca,#2563eb);
+  box-shadow:0 2px 5px #1e3a8a20;transition:.2s;
+}
+button:hover{
+  background:linear-gradient(135deg,#0f766e,#15803d);
+  transform:translateY(-1px);
+  box-shadow:0 4px 9px #0f172a25;
+}
+button.secondary{
+  color:#312e81;background:linear-gradient(135deg,#e0e7ff,#dbeafe);
+  border-color:#a5b4fc;
+}
+button.secondary:hover{
+  color:#fff;background:linear-gradient(135deg,#4338ca,#2563eb);
+}
+button.danger{
+  color:#fff;background:linear-gradient(135deg,#dc2626,#991b1b);
+  border-color:#f87171;
+}
+.topcontrols select{min-width:145px}
+
+main{
+  height:auto;flex:1 1 auto;min-height:0;overflow:hidden;
+  padding:10px;display:grid;
+  grid-template-rows:auto minmax(0,1fr);gap:10px;
+}
+.kpis{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.kpi{
+  background:linear-gradient(145deg,#fff,#eef2ff);
+  border:2px solid #c7d2fe;border-radius:12px;
+  padding:10px 13px;min-width:0;
+  box-shadow:0 4px 12px #3730a315;transition:.2s;
+}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 7px 16px #3730a320}
+.kpi:nth-child(1){background:linear-gradient(135deg,#dcfce7,#fff);border-color:#86efac}
+.kpi:nth-child(2){background:linear-gradient(135deg,#fee2e2,#fff);border-color:#fca5a5}
+.kpi:nth-child(3){background:linear-gradient(135deg,#dbeafe,#fff);border-color:#93c5fd}
+.kpi:nth-child(4){background:linear-gradient(135deg,#f3e8ff,#fff);border-color:#d8b4fe}
+.kpi small{display:block;color:#475569;font-size:11px;margin-bottom:5px}
+.value{
+  font-size:clamp(16px,1.7vw,23px);font-weight:800;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.green{color:#15803d}.red{color:#b91c1c}.blue{color:#1d4ed8}
+
+.content{
+  display:grid;grid-template-columns:minmax(300px,.83fr) minmax(0,1.5fr);
+  gap:10px;min-height:0;
+}
+.left,.right{display:grid;gap:10px;min-height:0;min-width:0}
+.left{grid-template-rows:auto minmax(0,1fr)}
+.right{grid-template-rows:minmax(0,1fr) minmax(0,.85fr)}
+
+.panel{
+  background:linear-gradient(145deg,#fff,#f8faff);
+  border:2px solid #c7d2fe;border-radius:13px;padding:11px;
+  min-height:0;min-width:0;display:flex;flex-direction:column;
+  overflow:hidden;box-shadow:0 4px 13px #312e8110;
+}
+.left>.panel:first-child{background:linear-gradient(145deg,#eff6ff,#fff);border-color:#93c5fd}
+.left>.panel:last-child{background:linear-gradient(145deg,#f0fdf4,#fff);border-color:#86efac}
+.right>.panel:first-child{background:linear-gradient(145deg,#f5f3ff,#fff);border-color:#c4b5fd}
+.right>.panel:last-child{background:linear-gradient(145deg,#ecfeff,#fff);border-color:#67e8f9}
+
+.panel-head{
+  display:flex;align-items:center;gap:8px;
+  justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;
+}
+h2{font-size:15px;color:#312e81;margin:0}
+.tag{
+  font-size:11px;color:#3730a3;background:#e0e7ff;
+  border:1px solid #c7d2fe;padding:4px 8px;border-radius:99px;
+}
+.entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field label{
+  display:block;font-size:11px;color:#334155;
+  font-weight:700;margin-bottom:4px;
+}
+.field input,.field select{
+  width:100%;padding:8px;border:2px solid #bfdbfe;background:#fff;
+}
+.field.wide{grid-column:1/-1}
+#debit{background:#fff1f2;border-color:#fca5a5}
+#credit{background:#f0fdf4;border-color:#86efac}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.tablebox{
+  overflow:auto;min-height:0;flex:1;
+  border:2px solid #cbd5e1;border-radius:9px;background:#fff;
+}
+table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  min-width:490px;background:#fff;
+}
+th,td{
+  padding:7px 8px;border-right:1px solid #d5deed;
+  border-bottom:1px solid #d5deed;text-align:left;white-space:nowrap;
+}
+th:last-child,td:last-child{border-right:0}
+th{
+  background:linear-gradient(135deg,#312e81,#4338ca);
+  color:#fff;font-size:11px;position:sticky;top:0;
+  z-index:1;border-color:#6366f1;
+}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:nth-child(odd){background:#eff6ff}
+tbody tr:nth-child(even){background:#f5f3ff}
+tbody tr:hover{background:#fef3c7}
+tr.debit-row td{background:#fff1f2;border-color:#fecaca;color:#991b1b}
+tr.credit-row td{background:#ecfdf5;border-color:#bbf7d0;color:#166534}
+tr.debit-row:hover td{background:#fee2e2}
+tr.credit-row:hover td{background:#d1fae5}
+tfoot td{
+  font-weight:800;background:linear-gradient(135deg,#dbeafe,#e0e7ff);
+  border-top:2px solid #818cf8;
+}
+.smallbtn{padding:5px 7px;font-size:11px}
+.empty{text-align:center;color:#64748b;padding:20px;background:#f8fafc}
+.reporttable table{min-width:390px}
+.reporttable th,.reporttable td{padding:5px 7px;font-size:11px}
+.note{font-size:10px;color:#64748b;line-height:1.5;margin:7px 0 0}
+.status{font-size:11px;color:#166534;min-height:14px;margin-top:5px;font-weight:700}
+
+@media(max-width:900px){
+  html,body{height:100%;min-height:0;overflow:hidden!important}
+  header{height:auto;flex:0 0 auto;min-height:62px;flex-wrap:wrap;padding:12px}
+  main{
+    height:auto;flex:1 1 auto;min-height:0;
+    display:grid;grid-template-rows:auto minmax(0,1fr);
+    padding:8px;overflow:hidden;
+  }
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:0}
+  .content{
+    grid-template-columns:1fr;grid-template-rows:minmax(0,1fr);
+    overflow:auto;min-height:0;align-content:start;
+  }
+  .left,.right{
+    grid-template-rows:auto;display:grid;
+    margin-bottom:9px;min-height:auto;
+  }
+  .panel{min-height:180px}
+  .right .panel{min-height:240px}
+  .topcontrols{margin-left:0}
+}
+@media(max-width:480px){
+  .brand{font-size:19px}
+  .entry-grid{grid-template-columns:1fr 1fr;gap:7px}
+  .field input,.field select{padding:7px 5px;font-size:12px}
+  .actions button{padding:8px;font-size:11px}
+  .kpi{padding:9px}.subtitle{font-size:11px}
+}
+@media(min-width:901px) and (max-height:700px){
+  header{min-height:54px}.brand{font-size:18px}
+  main{min-height:0;padding:7px;gap:7px}
+  .kpi{padding:6px 10px}.panel{padding:8px}
+  .panel-head{margin-bottom:6px}
+  .entry-grid{gap:6px}
+  .field input,.field select{padding:6px}
+  .actions{margin-top:6px}th,td{padding:5px 7px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">💰 Debit & Credit</div>
+    <div class="subtitle">ಒಂದೇ ಪೇಜ್‌ನಲ್ಲಿ ಎಂಟ್ರಿ • ತಿಂಗಳ ಲೆಕ್ಕ • ವಾರ್ಷಿಕ ವರದಿ</div>
+  </div>
+  <div class="topcontrols">
+    <label for="globalMonth">ತಿಂಗಳು:</label>
+    <select id="globalMonth" aria-label="ತಿಂಗಳು ಆಯ್ಕೆ"></select>
+    <button class="secondary" id="exportCsv">CSV Export</button>
+    <button class="secondary" id="exportExcel">📊 Excel Export</button>
+    <button class="secondary" id="backup">Backup</button>
+    <button class="secondary" id="restoreBtn">Import</button>
+    <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<main>
+  <section class="kpis">
+    <div class="kpi"><small>ಆಯ್ದ ತಿಂಗಳ ಆದಾಯ (Credit)</small><div class="value green" id="monthIncome">₹0.00</div></div>
+    <div class="kpi"><small>ಆಯ್ದ ತಿಂಗಳ ಖರ್ಚು (Debit)</small><div class="value red" id="monthExpense">₹0.00</div></div>
+    <div class="kpi"><small>ಆಯ್ದ ತಿಂಗಳ ಉಳಿಕೆ</small><div class="value blue" id="monthBalance">₹0.00</div></div>
+    <div class="kpi"><small>ವಾರ್ಷಿಕ ಉಳಿಕೆ</small><div class="value blue" id="yearBalanceCard">₹0.00</div></div>
+  </section>
+
+  <section class="content">
+    <div class="left">
+      <section class="panel">
+        <div class="panel-head">
+          <h2 id="formTitle">➕ ಹೊಸ ಎಂಟ್ರಿ</h2>
+          <span class="tag">Entry Page</span>
+        </div>
+        <form id="entryForm">
+          <input type="hidden" id="editId">
+          <div class="entry-grid">
+            <div class="field">
+              <label for="entryMonth">ತಿಂಗಳ ಹೆಸರು</label>
+              <select id="entryMonth"></select>
+            </div>
+            <div class="field">
+              <label for="date">ದಿನಾಂಕ</label>
+              <input id="date" type="date" required>
+            </div>
+            <div class="field wide">
+              <label for="particulars">ವಿವರಗಳು / Particulars</label>
+              <input id="particulars" placeholder="ಸಂಬಳ, ಕಿರಾಣಿ, ಬಿಲ್..." required>
+            </div>
+            <div class="field">
+              <label for="debit">Debit / ಖರ್ಚು ₹</label>
+              <input id="debit" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="field">
+              <label for="credit">Credit / ಆದಾಯ ₹</label>
+              <input id="credit" type="number" min="0" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" id="saveBtn">ಉಳಿಸಿ</button>
+            <button type="button" class="secondary" id="cancelEdit">ಹೊಸ ಎಂಟ್ರಿ / ರದ್ದು</button>
+            <button type="button" class="danger" id="clearMonth">ಈ ತಿಂಗಳ ದಾಖಲೆ ಅಳಿಸಿ</button>
+          </div>
+          <div class="status" id="status"></div>
+        </form>
+        <p class="note">ಒಂದು ಎಂಟ್ರಿಯಲ್ಲಿ Debit ಅಥವಾ Credit ಒಂದನ್ನು ಮಾತ್ರ ನಮೂದಿಸಿ. ಉಳಿಸಿದ ತಕ್ಷಣ ತಿಂಗಳ ಮತ್ತು ವಾರ್ಷಿಕ ಲೆಕ್ಕ ನವೀಕರಿಸುತ್ತದೆ.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>📅 ತಿಂಗಳ ಲೆಕ್ಕಾಚಾರ</h2>
+          <span class="tag" id="monthLabel">ಜನವರಿ</span>
+        </div>
+        <div class="tablebox">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>ದಿನಾಂಕ</th><th>ವಿವರ</th>
+                <th class="num">Debit</th><th class="num">Credit</th>
+                <th class="num">Balance</th><th>ಕ್ರಿಯೆ</th>
+              </tr>
+            </thead>
+            <tbody id="records"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3">ಒಟ್ಟು</td>
+                <td class="num" id="sumDebit">₹0.00</td>
+                <td class="num" id="sumCredit">₹0.00</td>
+                <td class="num" id="closingBalance">₹0.00</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="right">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>📊 ವಾರ್ಷಿಕ ಲೆಕ್ಕಾಚಾರ</h2>
+          <span class="tag">Annual Report</span>
+        </div>
+        <div class="tablebox reporttable">
+          <table>
+            <thead>
+              <tr>
+                <th>ತಿಂಗಳು</th><th class="num">Credit / ಆದಾಯ</th>
+                <th class="num">Debit / ಖರ್ಚು</th><th class="num">ಉಳಿಕೆ</th>
+                <th class="num">ಎಂಟ್ರಿ</th>
+              </tr>
+            </thead>
+            <tbody id="yearReport"></tbody>
+            <tfoot>
+              <tr>
+                <td>ಒಟ್ಟು</td>
+                <td class="num green" id="yearIncome">₹0.00</td>
+                <td class="num red" id="yearExpense">₹0.00</td>
+                <td class="num blue" id="yearBalance">₹0.00</td>
+                <td class="num" id="yearCount">0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="note">ವಾರ್ಷಿಕ ಲೆಕ್ಕವು ಎಲ್ಲ 12 ತಿಂಗಳ ದಾಖಲೆಯ ಒಟ್ಟು ಮೊತ್ತವನ್ನು ತೋರಿಸುತ್ತದೆ.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>📌 ಆಯ್ದ ತಿಂಗಳ ಸಾರಾಂಶ</h2>
+          <span class="tag" id="summaryLabel">ತಿಂಗಳ ವರದಿ</span>
+        </div>
+        <div class="tablebox">
+          <table>
+            <thead><tr><th>ವಿವರ</th><th class="num">ಮೊತ್ತ</th></tr></thead>
+            <tbody>
+              <tr><td>ಒಟ್ಟು ಎಂಟ್ರಿಗಳು</td><td class="num" id="monthCount">0</td></tr>
+              <tr><td>ಒಟ್ಟು Credit / ಆದಾಯ</td><td class="num green" id="summaryCredit">₹0.00</td></tr>
+              <tr><td>ಒಟ್ಟು Debit / ಖರ್ಚು</td><td class="num red" id="summaryDebit">₹0.00</td></tr>
+              <tr><td>ಉಳಿಕೆ (Credit − Debit)</td><td class="num blue" id="summaryBalance">₹0.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">ಡೇಟಾ ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಉಳಿಯುತ್ತದೆ. Backup ಬಟನ್ ಒತ್ತಿ JSON ಫೈಲ್ ಸುರಕ್ಷಿತವಾಗಿ ಇಟ್ಟುಕೊಳ್ಳಿ. ಬೇರೆ ಸಾಧನಗಳಲ್ಲಿ ಬಳಸಲು ಸರ್ವರ್/ಡೇಟಾಬೇಸ್ ಅಗತ್ಯ.</p>
+      </section>
+    </div>
+  </section>
+</main>
+
+<script>
+const MONTHS=[
+  'JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE',
+  'JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'
+];
+const KMONTHS=[
+  'ಜನವರಿ','ಫೆಬ್ರವರಿ','ಮಾರ್ಚ್','ಏಪ್ರಿಲ್','ಮೇ','ಜೂನ್',
+  'ಜುಲೈ','ಆಗಸ್ಟ್','ಸೆಪ್ಟೆಂಬರ್','ಅಕ್ಟೋಬರ್','ನವೆಂಬರ್','ಡಿಸೆಂಬರ್'
+];
+const KEY='debitCreditAccount_v2';
+const $=id=>document.getElementById(id);
+let data=loadData();
+let selectedMonth=new Date().getMonth();
+
+function loadData(){
+  try{
+    let x=JSON.parse(localStorage.getItem(KEY)||'null');
+    if(x&&Array.isArray(x.records))return x;
+    let old=JSON.parse(localStorage.getItem('debitCreditAccount_v1')||'null');
+    if(old&&Array.isArray(old.records))return old;
+    return {records:[]};
+  }catch(e){
+    return {records:[]};
+  }
+}
+
+function persist(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(data));
+  }catch(e){
+    alert('ಡೇಟಾ ಉಳಿಸಲಾಗಲಿಲ್ಲ. ಬ್ರೌಸರ್ ಸಂಗ್ರಹಣೆಯನ್ನು ಪರಿಶೀಲಿಸಿ.');
+  }
+}
+
+function money(n){
+  return '₹'+(Number(n)||0).toLocaleString('en-IN',{
+    minimumFractionDigits:2,maximumFractionDigits:2
+  });
+}
+
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function listFor(m){
+  return data.records
+    .filter(r=>Number(r.month)===m)
+    .sort((a,b)=>String(a.date).localeCompare(String(b.date))||
+      (a.created||0)-(b.created||0));
+}
+
+function totals(list){
+  return {
+    debit:list.reduce((s,r)=>s+Number(r.debit||0),0),
+    credit:list.reduce((s,r)=>s+Number(r.credit||0),0)
+  };
+}
+
+function init(){
+  const options=MONTHS.map((m,i)=>
+    `<option value="${i}">${KMONTHS[i]} (${m})</option>`
+  ).join('');
+
+  $('globalMonth').innerHTML=options;
+  $('entryMonth').innerHTML=options;
+  $('globalMonth').value=selectedMonth;
+  $('entryMonth').value=selectedMonth;
+
+  // ಸ್ಥಳೀಯ ದಿನಾಂಕವನ್ನು ಸರಿಯಾಗಿ ಹೊಂದಿಸುವುದು
+  const now=new Date();
+  $('date').value=[
+    now.getFullYear(),
+    String(now.getMonth()+1).padStart(2,'0'),
+    String(now.getDate()).padStart(2,'0')
+  ].join('-');
+
+  $('globalMonth').onchange=()=>{
+    selectedMonth=+$('globalMonth').value;
+    $('entryMonth').value=selectedMonth;
+    resetForm();
+    render();
+  };
+
+  $('entryMonth').onchange=()=>{
+    selectedMonth=+$('entryMonth').value;
+    $('globalMonth').value=selectedMonth;
+    render();
+  };
+
+  render();
+}
+
+function render(){
+  const list=listFor(selectedMonth);
+  const t=totals(list);
+  const bal=t.credit-t.debit;
+
+  $('monthIncome').textContent=money(t.credit);
+  $('monthExpense').textContent=money(t.debit);
+  $('monthBalance').textContent=money(bal);
+  $('monthLabel').textContent=KMONTHS[selectedMonth];
+  $('summaryLabel').textContent=KMONTHS[selectedMonth]+' ಸಾರಾಂಶ';
+  $('monthCount').textContent=list.length;
+  $('summaryCredit').textContent=money(t.credit);
+  $('summaryDebit').textContent=money(t.debit);
+  $('summaryBalance').textContent=money(bal);
+
+  let running=0;
+  $('records').innerHTML=list.length?list.map((r,i)=>{
+    running+=Number(r.credit||0)-Number(r.debit||0);
+    const rowClass=Number(r.debit||0)>0?'debit-row':
+      Number(r.credit||0)>0?'credit-row':'';
+
+    return `<tr class="${rowClass}">
+      <td>${i+1}</td>
+      <td>${esc(r.date)}</td>
+      <td>${esc(r.particulars)}</td>
+      <td class="num">${money(r.debit)}</td>
+      <td class="num">${money(r.credit)}</td>
+      <td class="num">${money(running)}</td>
+      <td>
+        <button class="smallbtn secondary edit" data-id="${esc(r.id)}">Edit</button>
+        <button class="smallbtn danger del" data-id="${esc(r.id)}">×</button>
+      </td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="7" class="empty">ಈ ತಿಂಗಳ ಎಂಟ್ರಿಗಳು ಇಲ್ಲ.</td></tr>`;
+
+  $('sumDebit').textContent=money(t.debit);
+  $('sumCredit').textContent=money(t.credit);
+  $('closingBalance').textContent=money(bal);
+
+  $('records').querySelectorAll('.edit').forEach(b=>
+    b.onclick=()=>editRecord(b.dataset.id)
+  );
+  $('records').querySelectorAll('.del').forEach(b=>
+    b.onclick=()=>deleteRecord(b.dataset.id)
+  );
+
+  let yCredit=0,yDebit=0,yCount=0;
+
+  $('yearReport').innerHTML=MONTHS.map((m,i)=>{
+    const a=listFor(i);
+    const z=totals(a);
+    yCredit+=z.credit;
+    yDebit+=z.debit;
+    yCount+=a.length;
+
+    return `<tr>
+      <td>${KMONTHS[i]}${i===selectedMonth?' ◀':''}</td>
+      <td class="num green">${money(z.credit)}</td>
+      <td class="num red">${money(z.debit)}</td>
+      <td class="num blue">${money(z.credit-z.debit)}</td>
+      <td class="num">${a.length}</td>
+    </tr>`;
+  }).join('');
+
+  $('yearIncome').textContent=money(yCredit);
+  $('yearExpense').textContent=money(yDebit);
+  $('yearBalance').textContent=money(yCredit-yDebit);
+  $('yearCount').textContent=yCount;
+  $('yearBalanceCard').textContent=money(yCredit-yDebit);
+}
+
+function resetForm(){
+  $('entryForm').reset();
+  $('editId').value='';
+  $('entryMonth').value=selectedMonth;
+
+  const now=new Date();
+  $('date').value=[
+    now.getFullYear(),
+    String(now.getMonth()+1).padStart(2,'0'),
+    String(now.getDate()).padStart(2,'0')
+  ].join('-');
+
+  $('debit').value='0';
+  $('credit').value='0';
+  $('formTitle').textContent='➕ ಹೊಸ ಎಂಟ್ರಿ';
+  $('saveBtn').textContent='ಉಳಿಸಿ';
+  $('status').textContent='';
+}
+
+function editRecord(id){
+  const r=data.records.find(x=>String(x.id)===String(id));
+  if(!r)return;
+
+  $('editId').value=r.id;
+  $('entryMonth').value=r.month;
+  $('globalMonth').value=r.month;
+  selectedMonth=+r.month;
+  $('date').value=r.date;
+  $('particulars').value=r.particulars;
+  $('debit').value=r.debit;
+  $('credit').value=r.credit;
+  $('formTitle').textContent='✏️ ಎಂಟ್ರಿ ತಿದ್ದುಪಡಿ';
+  $('saveBtn').textContent='ಬದಲಾವಣೆ ಉಳಿಸಿ';
+  render();
+}
+
+function deleteRecord(id){
+  if(!confirm('ಈ ದಾಖಲೆಯನ್ನು ಅಳಿಸಬೇಕೇ?'))return;
+
+  data.records=data.records.filter(r=>String(r.id)!==String(id));
+  persist();
+  render();
+}
+
+$('entryForm').addEventListener('submit',e=>{
+  e.preventDefault();
+
+  const month=+$('entryMonth').value;
+  const debit=Number($('debit').value||0);
+  const credit=Number($('credit').value||0);
+  const particulars=$('particulars').value.trim();
+
+  if(!particulars){
+    alert('ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ.');
+    return;
+  }
+  if(debit<0||credit<0){
+    alert('ಮೊತ್ತ ಋಣಾತ್ಮಕವಾಗಿರಬಾರದು.');
+    return;
+  }
+  if(debit>0&&credit>0){
+    alert('ಒಂದೇ ಎಂಟ್ರಿಯಲ್ಲಿ Debit ಅಥವಾ Credit ಒಂದನ್ನು ಮಾತ್ರ ನಮೂದಿಸಿ.');
+    return;
+  }
+  if(debit===0&&credit===0){
+    alert('Debit ಅಥವಾ Credit ಮೊತ್ತವನ್ನು ನಮೂದಿಸಿ.');
+    return;
+  }
+
+  const id=$('editId').value;
+  const rec={
+    id:id||String(Date.now())+'_'+Math.random().toString(36).slice(2,7),
+    month,
+    date:$('date').value,
+    particulars,
+    debit,
+    credit,
+    created:Date.now()
+  };
+
+  if(id){
+    const ix=data.records.findIndex(r=>String(r.id)===String(id));
+    if(ix>=0)data.records[ix]=rec;
+    else data.records.push(rec);
+  }else{
+    data.records.push(rec);
+  }
+
+  selectedMonth=month;
+  $('globalMonth').value=month;
+  persist();
+  resetForm();
+  render();
+  $('status').textContent='✓ ಎಂಟ್ರಿ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ.';
+});
+
+$('cancelEdit').onclick=resetForm;
+
+$('clearMonth').onclick=()=>{
+  if(!confirm(KMONTHS[selectedMonth]+' ತಿಂಗಳ ಎಲ್ಲ ದಾಖಲೆಗಳನ್ನು ಅಳಿಸಬೇಕೇ?'))return;
+
+  data.records=data.records.filter(r=>+r.month!==selectedMonth);
+  persist();
+  resetForm();
+  render();
+};
+
+function download(content,name,type){
+  const blob=new Blob([content],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+// CSV EXPORT
+$('exportCsv').onclick=()=>{
+  const list=listFor(selectedMonth);
+  let run=0;
+
+  const rows=[
+    ['S.No','Date','Particulars','Debit','Credit','Balance']
+  ];
+
+  list.forEach((r,i)=>{
+    run+=Number(r.credit||0)-Number(r.debit||0);
+    rows.push([i+1,r.date,r.particulars,r.debit,r.credit,run]);
+  });
+
+  const csv='\uFEFF'+rows.map(row=>
+    row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')
+  ).join('\r\n');
+
+  download(
+    csv,
+    MONTHS[selectedMonth]+'_Debit_Credit.csv',
+    'text/csv;charset=utf-8;'
+  );
+};
+
+// EXCEL EXPORT — ಎರಡು Sheets
+$('exportExcel').onclick=()=>{
+  if(typeof XLSX==='undefined'){
+    alert('Excel Library ಲೋಡ್ ಆಗಿಲ್ಲ. Internet ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಪುಟವನ್ನು ಮತ್ತೆ ತೆರೆಯಿರಿ.');
+    return;
+  }
+
+  const list=listFor(selectedMonth);
+  const t=totals(list);
+
+  // Sheet 1: Monthly Entries
+  const entryRows=[
+    ['ಕ್ರಮ ಸಂಖ್ಯೆ','ದಿನಾಂಕ','ವಿವರಗಳು','Debit / ಖರ್ಚು','Credit / ಆದಾಯ','Balance / ಉಳಿಕೆ']
+  ];
+
+  let runningBalance=0;
+
+  list.forEach((r,i)=>{
+    runningBalance+=Number(r.credit||0)-Number(r.debit||0);
+
+    entryRows.push([
+      i+1,
+      r.date,
+      r.particulars,
+      Number(r.debit||0),
+      Number(r.credit||0),
+      runningBalance
+    ]);
+  });
+
+  entryRows.push([
+    '', '', 'ಒಟ್ಟು',
+    t.debit,
+    t.credit,
+    t.credit-t.debit
+  ]);
+
+  // Sheet 2: Annual Report
+  const annualRows=[
+    ['ತಿಂಗಳು','Credit / ಆದಾಯ','Debit / ಖರ್ಚು','ಉಳಿಕೆ','ಒಟ್ಟು ಎಂಟ್ರಿಗಳು']
+  ];
+
+  let annualCredit=0;
+  let annualDebit=0;
+  let annualCount=0;
+
+  MONTHS.forEach((month,i)=>{
+    const monthRecords=listFor(i);
+    const mt=totals(monthRecords);
+
+    annualCredit+=mt.credit;
+    annualDebit+=mt.debit;
+    annualCount+=monthRecords.length;
+
+    annualRows.push([
+      KMONTHS[i],
+      mt.credit,
+      mt.debit,
+      mt.credit-mt.debit,
+      monthRecords.length
+    ]);
+  });
+
+  annualRows.push([
+    'ಒಟ್ಟು',
+    annualCredit,
+    annualDebit,
+    annualCredit-annualDebit,
+    annualCount
+  ]);
+
+  const workbook=XLSX.utils.book_new();
+  const entrySheet=XLSX.utils.aoa_to_sheet(entryRows);
+  const annualSheet=XLSX.utils.aoa_to_sheet(annualRows);
+
+  entrySheet['!cols']=[
+    {wch:12},{wch:15},{wch:32},{wch:18},{wch:18},{wch:20}
+  ];
+  annualSheet['!cols']=[
+    {wch:18},{wch:20},{wch:20},{wch:18},{wch:18}
+  ];
+
+  // ಸಂಖ್ಯಾ ಕಾಲಮ್‌ಗಳಿಗೆ Excel Number Format
+  for(let r=1;r<entryRows.length;r++){
+    ['D','E','F'].forEach(col=>{
+      const cell=entrySheet[col+(r+1)];
+      if(cell&&typeof cell.v==='number')cell.z='#,##0.00';
+    });
+  }
+
+  for(let r=1;r<annualRows.length;r++){
+    ['B','C','D'].forEach(col=>{
+      const cell=annualSheet[col+(r+1)];
+      if(cell&&typeof cell.v==='number')cell.z='#,##0.00';
+    });
+  }
+
+  XLSX.utils.book_append_sheet(workbook,entrySheet,'Monthly Entries');
+  XLSX.utils.book_append_sheet(workbook,annualSheet,'Annual Report');
+
+  XLSX.writeFile(
+    workbook,
+    MONTHS[selectedMonth]+'_Debit_Credit.xlsx'
+  );
+};
+
+// BACKUP
+$('backup').onclick=()=>{
+  download(
+    JSON.stringify(data,null,2),
+    'Debit_Credit_Backup.json',
+    'application/json'
+  );
+};
+
+// IMPORT
+$('restoreBtn').onclick=()=>$('restoreFile').click();
+
+$('restoreFile').onchange=async e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+
+  try{
+    const x=JSON.parse(await f.text());
+
+    if(!x||!Array.isArray(x.records))throw Error();
+
+    if(!confirm('Backup‌ನ ಡೇಟಾ ಈಗಿನ ಡೇಟಾವನ್ನು ಬದಲಾಯಿಸುತ್ತದೆ. ಮುಂದುವರಿಸಬೇಕೇ?'))return;
+
+    data={
+      records:x.records.filter(r=>
+        r&&r.id!==undefined&&
+        Number.isInteger(Number(r.month))&&
+        Number(r.month)>=0&&Number(r.month)<=11
+      )
+    };
+
+    persist();
+    resetForm();
+    render();
+    alert('Backup Import ಯಶಸ್ವಿಯಾಗಿದೆ.');
+  }catch(err){
+    alert('ಸರಿಯಾದ JSON Backup ಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ.');
+  }finally{
+    e.target.value='';
+  }
+};
+
+init();
+</script>
+</body>
+</html>
